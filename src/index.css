@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* The map container will now fill 100% of its parent div, not the whole viewport. */
+.leaflet-container {
+  height: 100%;
+  width: 90%;
+}
