@@ -3,45 +3,44 @@ import Sidebar from '../components/Sidebar';
 import Map from '../components/Map';
 
 export default function DriverDashboard() {
-    // Fixed bus stops with names and coordinates
+    // Fixed bus stops with names and coordinates for Ludhiana
     const busStops = [
-        { id: 'stop-1', name: 'India Gate Stop', location: [28.6129, 77.2295] },
-        { id: 'stop-2', name: 'Connaught Place Stop', location: [28.6322, 77.2196] },
-        { id: 'stop-3', name: 'Qutub Minar Stop', location: [28.5244, 77.1855] },
-        { id: 'stop-4', name: 'Akshardham Temple Stop', location: [28.6127, 77.2773] },
-        { id: 'stop-5', name: 'Red Fort Stop', location: [28.6562, 77.2410] },
-        { id: 'stop-6', name: 'Humayun\'s Tomb Stop', location: [28.5933, 77.2507] },
-        { id: 'stop-7', name: 'Lotus Temple Stop', location: [28.5535, 77.2588] },
-        { id: 'stop-8', name: 'Chandni Chowk Stop', location: [28.6588, 77.2291] },
-        { id: 'stop-9', name: 'Delhi Airport Stop', location: [28.5562, 77.1009] },
-        { id: 'stop-10', name: 'Hauz Khas Village Stop', location: [28.5534, 77.1932] },
+        { id: 'stop-1', name: 'Ludhiana Junction Stop', location: [30.8974, 75.8569] },
+        { id: 'stop-2', name: 'Feroz Gandhi Market Stop', location: [30.8872, 75.8458] },
+        { id: 'stop-3', name: 'Sarabha Nagar Market Stop', location: [30.8808, 75.8078] },
+        { id: 'stop-4', name: 'Rose Garden Stop', location: [30.8937, 75.8294] },
+        { id: 'stop-5', name: 'Punjab Agricultural University Stop', location: [30.8988, 75.8091] },
+        { id: 'stop-6', name: 'Pavilion Mall Stop', location: [30.8992, 75.8488] },
+        { id: 'stop-7', name: 'Guru Nanak Stadium Stop', location: [30.9048, 75.8647] },
+        { id: 'stop-8', name: 'Ghanta Ghar Stop', location: [30.9038, 75.8443] },
+        { id: 'stop-9', name: 'Mini Secretariat Stop', location: [30.9168, 75.8485] },
+        { id: 'stop-10', name: 'Model Town Market Stop', location: [30.8711, 75.8236] },
     ];
-    
-    const currentTrip = { route: "Downtown - Airport", time: "08:00 AM - 06:00 PM", current: "Central Station", next: "Business District", passengers: 15, totalPassengers: 40 };
+
+    const currentTrip = { route: "Junction to Rose Garden", time: "08:00 AM - 06:00 PM", current: "Ludhiana Junction", next: "Feroz Gandhi Market", passengers: 15, totalPassengers: 40 };
+
     const schedule = [
-        { time: "08:00 AM", status: "active", route: "Downtown - Airport", stops: 12 },
-        { time: "11:00 AM", status: "upcoming", route: "Airport - Mall", stops: 8 },
-        { time: "02:00 PM", status: "upcoming", route: "Mall - University", stops: 15 },
-        { time: "06:00 PM", status: "upcoming", route: "University - Downtown", stops: 10 }
+        { time: "08:00 AM", status: "active", route: "Junction to Rose Garden", stops: 12 },
+        { time: "11:00 AM", status: "upcoming", route: "PAU to Pavilion Mall", stops: 8 },
+        { time: "02:00 PM", status: "upcoming", route: "Ghanta Ghar to Mini Secretariat", stops: 15 },
+        { time: "06:00 PM", status: "upcoming", route: "Sarabha Nagar to Model Town", stops: 10 }
     ];
     const notifications = [
-        { type: "alert", text: "Route Change Alert: Construction on Main St. Use alternate route via Oak Avenue.", time: "10 minutes ago" },
-        { type: "update", text: "Passenger Update: High passenger volume expected at University stop today.", time: "1 hour ago" },
+        { type: "alert", text: "Route Change Alert: Construction near Rose Garden. Use an alternate route.", time: "10 minutes ago" },
+        { type: "update", text: "Passenger Update: High passenger volume expected at Feroz Gandhi Market.", time: "1 hour ago" },
         { type: "completed", text: "Trip Completed: Morning route completed successfully. Great job!", time: "2 hours ago" }
     ];
     const vehicleStatus = { fuel: 75, mileage: "45,230 km", lastMaintenance: "Dec 15, 2024", nextMaintenance: "Jan 15, 2025" };
 
-    // This is the specific route for the driver to display on the map.
     const driverRoute = [
-        [28.7041, 77.1025],
-        [28.65, 77.2],
-        [28.6129, 77.2295],
-        [28.6322, 77.2196],
-        [28.5933, 77.2507]
+        [30.8974, 75.8569],
+        [30.8992, 75.8488],
+        [30.8937, 75.8294],
+        [30.8808, 75.8078],
     ];
-    // Dummy bus data for the map with location coordinates.
+
     const driverBus = [
-        { id: 'BUS-001', name: 'Bus 001', status: 'Active', route: 'Downtown - Airport', location: [28.6129, 77.2295] }
+        { id: 'BUS-001', name: 'Bus 001', status: 'Active', route: 'Junction to Rose Garden', location: [30.8974, 75.8569] }
     ];
 
     return (
@@ -59,7 +58,6 @@ export default function DriverDashboard() {
                 </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    {/* Map section for the driver */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 w-full h-[500px]">
                         <h3 className="text-xl font-semibold text-gray-800 mb-4">Your Assigned Route</h3>
                         <div className="w-full h-[400px]">
