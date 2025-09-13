@@ -5,7 +5,6 @@ import 'leaflet/dist/leaflet.css';
 import busStopIconPng from '../assets/icon/bus-station.png';
 
 // This is the standard fix for Leaflet's default icon issue with modern bundlers.
-// It sets a correct URL for the icon assets, which the compatibility plugin does automatically.
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -21,7 +20,7 @@ const busIcon = new L.Icon({
     popupAnchor: [0, -32],
 });
 
-// Custom bus stop icon using your local asset
+// Custom bus stop icon
 const stopIcon = new L.Icon({
     iconUrl: busStopIconPng,
     iconSize: [32, 32],
@@ -29,28 +28,19 @@ const stopIcon = new L.Icon({
     popupAnchor: [0, -32],
 });
 
-export default function Map({ buses = [], stops = [], redLine, blueLine }) {
-    const position = [30.9009, 75.8573];
+export default function Map({ buses = [], stops = [], redLine, blueLine, route }) {
+    const position = [30.9009, 75.8573]; // Ludhiana center
     
     const ludhianaBounds = [
         [30.7, 75.6],
         [31.1, 76.1],
     ];
     
-    // Check if the routes are defined to prevent errors
-    if (!redLine || !blueLine) {
-        return (
-            <div className="w-full h-full flex items-center justify-center rounded-xl bg-gray-200 text-gray-600">
-                Loading map data...
-            </div>
-        );
-    }
-    
-    // Extract coordinates for each route from the props
-    const redLineForwardCoords = redLine.forward.map(stop => stop.location);
-    const redLineReverseCoords = redLine.reverse.map(stop => stop.location);
-    const blueLineForwardCoords = blueLine.forward.map(stop => stop.location);
-    const blueLineReverseCoords = blueLine.reverse.map(stop => stop.location);
+    // Extract coordinates safely, checking if the routes exist
+    const redLineForwardCoords = redLine?.forward?.map(stop => stop.location);
+    const redLineReverseCoords = redLine?.reverse?.map(stop => stop.location);
+    const blueLineForwardCoords = blueLine?.forward?.map(stop => stop.location);
+    const blueLineReverseCoords = blueLine?.reverse?.map(stop => stop.location);
 
     return (
         <MapContainer
@@ -67,25 +57,16 @@ export default function Map({ buses = [], stops = [], redLine, blueLine }) {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
             
-            {/* Draw the Red Line routes */}
-            <Polyline
-                positions={redLineForwardCoords}
-                pathOptions={{ color: 'red', weight: 5, opacity: 0.8 }}
-            />
-            <Polyline
-                positions={redLineReverseCoords}
-                pathOptions={{ color: 'red', weight: 5, opacity: 0.5, dashArray: '10, 10' }}
-            />
+            {/* Draw the Red Line routes if they exist */}
+            {redLineForwardCoords && <Polyline positions={redLineForwardCoords} pathOptions={{ color: 'red', weight: 5, opacity: 0.8 }} />}
+            {redLineReverseCoords && <Polyline positions={redLineReverseCoords} pathOptions={{ color: 'red', weight: 5, opacity: 0.5, dashArray: '10, 10' }} />}
 
-            {/* Draw the Blue Line routes */}
-            <Polyline
-                positions={blueLineForwardCoords}
-                pathOptions={{ color: 'blue', weight: 5, opacity: 0.8 }}
-            />
-            <Polyline
-                positions={blueLineReverseCoords}
-                pathOptions={{ color: 'blue', weight: 5, opacity: 0.5, dashArray: '10, 10' }}
-            />
+            {/* Draw the Blue Line routes if they exist */}
+            {blueLineForwardCoords && <Polyline positions={blueLineForwardCoords} pathOptions={{ color: 'blue', weight: 5, opacity: 0.8 }} />}
+            {blueLineReverseCoords && <Polyline positions={blueLineReverseCoords} pathOptions={{ color: 'blue', weight: 5, opacity: 0.5, dashArray: '10, 10' }} />}
+            
+            {/* Draw a single route if provided (for DriverDashboard) */}
+            {route && <Polyline positions={route} pathOptions={{ color: 'green', weight: 6, opacity: 0.9 }} />}
 
             {/* Render all bus stops as markers */}
             {stops.map(stop => (

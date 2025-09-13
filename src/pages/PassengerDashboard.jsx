@@ -1,27 +1,77 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import Map from '../components/Map';
+import { dataService } from '../services/dataService';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function PassengerDashboard() {
+    const { user } = useAuth();
+    const [buses, setBuses] = useState([]);
+    const [routes, setRoutes] = useState([]);
+    const [loading, setLoading] = useState(true);
+    
     // State variables for the "Find Your Bus" section
-    const [departure, setDeparture] = React.useState('');
-    const [destination, setDestination] = React.useState('');
-    const [message, setMessage] = React.useState('');
-    const [departureSuggestions, setDepartureSuggestions] = React.useState([]);
-    const [destinationSuggestions, setDestinationSuggestions] = React.useState([]);
+    const [departure, setDeparture] = useState('');
+    const [destination, setDestination] = useState('');
+    const [message, setMessage] = useState('');
+    const [departureSuggestions, setDepartureSuggestions] = useState([]);
+    const [destinationSuggestions, setDestinationSuggestions] = useState([]);
     
-    // New state to hold the buses that match the search criteria
-    const availableBuses = [
-        { id: 1, route: "Red Line", rating: 4.8, time: "7:30 AM - 9:00 AM", duration: "1h 30m", seats: 15, totalSeats: 40, price: "$12.50", amenities: ["WIFI", "AC", "USB Charging"], status: "available" },
-        { id: 2, route: "Red Line", rating: 4.7, time: "8:00 AM - 9:30 AM", duration: "1h 30m", seats: 25, totalSeats: 40, price: "$12.50", amenities: ["WIFI", "AC"], status: "available" },
-        { id: 3, route: "Blue Line", rating: 4.5, time: "8:45 AM - 10:15 AM", duration: "1h 30m", seats: 20, totalSeats: 40, price: "$9.25", amenities: ["WIFI", "AC"], status: "available" },
-        { id: 4, route: "Blue Line", rating: 4.6, time: "9:15 AM - 10:45 AM", duration: "1h 30m", seats: 30, totalSeats: 40, price: "$9.25", amenities: ["WIFI", "AC", "Refreshments"], status: "available" },
-    ];
-    
-    const [filteredBuses, setFilteredBuses] = React.useState(availableBuses);
+    const [filteredBuses, setFilteredBuses] = useState([]);
 
-    // Fixed bus stops with names and coordinates for Ludhiana
-    const busStops = [
+    useEffect(() => {
+        loadPassengerData();
+    }, []);
+
+    const loadPassengerData = async () => {
+        try {
+            setLoading(true);
+            
+            // Fetch buses and routes from backend
+            const [busesData, routesData] = await Promise.all([
+                dataService.getBuses(),
+                dataService.getRoutes()
+            ]);
+
+            const transformedBuses = dataService.transformBusData(busesData);
+            const transformedRoutes = dataService.transformRouteData(routesData);
+
+            // Convert backend buses to available buses format
+            const availableBuses = transformedBuses.map((bus, index) => ({
+                id: bus.id,
+                route: bus.routeName || "Route",
+                rating: 4.5 + Math.random() * 0.5,
+                time: `${8 + index}:00 AM - ${9 + index}:30 AM`,
+                duration: "1h 30m",
+                seats: Math.floor(Math.random() * 20) + 10,
+                totalSeats: bus.capacity || 40,
+                price: `₹${25 + Math.floor(Math.random() * 50)}`,
+                amenities: ["WIFI", "AC", "USB Charging"],
+                status: "available"
+            }));
+
+            setBuses(transformedBuses);
+            setRoutes(transformedRoutes);
+            setFilteredBuses(availableBuses);
+        } catch (err) {
+            console.error('Error loading passenger data:', err);
+            // Fallback to sample data
+            const availableBuses = [
+                { id: 1, route: "Red Line", rating: 4.8, time: "7:30 AM - 9:00 AM", duration: "1h 30m", seats: 15, totalSeats: 40, price: "₹25", amenities: ["WIFI", "AC", "USB Charging"], status: "available" },
+                { id: 2, route: "Red Line", rating: 4.7, time: "8:00 AM - 9:30 AM", duration: "1h 30m", seats: 25, totalSeats: 40, price: "₹25", amenities: ["WIFI", "AC"], status: "available" },
+                { id: 3, route: "Blue Line", rating: 4.5, time: "8:45 AM - 10:15 AM", duration: "1h 30m", seats: 20, totalSeats: 40, price: "₹30", amenities: ["WIFI", "AC"], status: "available" },
+                { id: 4, route: "Blue Line", rating: 4.6, time: "9:15 AM - 10:45 AM", duration: "1h 30m", seats: 30, totalSeats: 40, price: "₹30", amenities: ["WIFI", "AC", "Refreshments"], status: "available" },
+            ];
+            setFilteredBuses(availableBuses);
+            setBuses([]);
+            setRoutes([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Default bus stops for Ludhiana (fallback data)
+    const defaultBusStops = [
         { id: 'stop-1', name: 'Ludhiana Junction Stop', location: [30.8974, 75.8569] },
         { id: 'stop-2', name: 'Feroz Gandhi Market Stop', location: [30.8872, 75.8458] },
         { id: 'stop-3', name: 'Sarabha Nagar Market Stop', location: [30.8808, 75.8078] },
@@ -33,52 +83,75 @@ export default function PassengerDashboard() {
         { id: 'stop-9', name: 'Mini Secretariat Stop', location: [30.9168, 75.8485] },
         { id: 'stop-10', name: 'Model Town Market Stop', location: [30.8711, 75.8236] },
     ];
+
+    const allStops = routes.length > 0 
+        ? routes.flatMap(route => route.stops)
+        : defaultBusStops;
     
-    // Define the Red Line routes with a common transfer point
-    const redLine = {
-        forward: [
-            { name: 'Ludhiana Junction Stop', location: [30.8974, 75.8569] },
-            { name: 'Pavilion Mall Stop', location: [30.8992, 75.8488] },
-            { name: 'Feroz Gandhi Market Stop', location: [30.8872, 75.8458] },
-            { name: 'Model Town Market Stop', location: [30.8711, 75.8236] },
-            { name: 'Sarabha Nagar Market Stop', location: [30.8808, 75.8078] },
-            { name: 'Ghanta Ghar Stop', location: [30.9038, 75.8443] } // Common transfer point
-        ],
-        reverse: [
-            { name: 'Ghanta Ghar Stop', location: [30.9038, 75.8443] },
-            { name: 'Sarabha Nagar Market Stop', location: [30.8808, 75.8078] },
-            { name: 'Model Town Market Stop', location: [30.8711, 75.8236] },
-            { name: 'Feroz Gandhi Market Stop', location: [30.8872, 75.8458] },
-            { name: 'Pavilion Mall Stop', location: [30.8992, 75.8488] },
-            { name: 'Ludhiana Junction Stop', location: [30.8974, 75.8569] }
-        ]
+    // Create route lines from route data or use defaults
+    const getRouteLines = () => {
+        if (routes.length === 0) {
+            // Default routes if no data from backend
+            return {
+                redLine: {
+                    forward: [
+                        { name: 'Ludhiana Junction Stop', location: [30.8974, 75.8569] },
+                        { name: 'Pavilion Mall Stop', location: [30.8992, 75.8488] },
+                        { name: 'Feroz Gandhi Market Stop', location: [30.8872, 75.8458] },
+                        { name: 'Model Town Market Stop', location: [30.8711, 75.8236] },
+                        { name: 'Sarabha Nagar Market Stop', location: [30.8808, 75.8078] },
+                        { name: 'Ghanta Ghar Stop', location: [30.9038, 75.8443] }
+                    ],
+                    reverse: [
+                        { name: 'Ghanta Ghar Stop', location: [30.9038, 75.8443] },
+                        { name: 'Sarabha Nagar Market Stop', location: [30.8808, 75.8078] },
+                        { name: 'Model Town Market Stop', location: [30.8711, 75.8236] },
+                        { name: 'Feroz Gandhi Market Stop', location: [30.8872, 75.8458] },
+                        { name: 'Pavilion Mall Stop', location: [30.8992, 75.8488] },
+                        { name: 'Ludhiana Junction Stop', location: [30.8974, 75.8569] }
+                    ]
+                },
+                blueLine: {
+                    forward: [
+                        { name: 'Ghanta Ghar Stop', location: [30.9038, 75.8443] },
+                        { name: 'Mini Secretariat Stop', location: [30.9168, 75.8485] },
+                        { name: 'Guru Nanak Stadium Stop', location: [30.9048, 75.8647] },
+                        { name: 'Rose Garden Stop', location: [30.8937, 75.8294] },
+                        { name: 'Punjab Agricultural University Stop', location: [30.8988, 75.8091] },
+                    ],
+                    reverse: [
+                        { name: 'Punjab Agricultural University Stop', location: [30.8988, 75.8091] },
+                        { name: 'Rose Garden Stop', location: [30.8937, 75.8294] },
+                        { name: 'Guru Nanak Stadium Stop', location: [30.9048, 75.8647] },
+                        { name: 'Mini Secretariat Stop', location: [30.9168, 75.8485] },
+                        { name: 'Ghanta Ghar Stop', location: [30.9038, 75.8443] }
+                    ]
+                }
+            };
+        }
+
+        // Create route lines from actual route data
+        const routeLines = {};
+        routes.forEach((route, index) => {
+            const routeName = index === 0 ? 'redLine' : 'blueLine';
+            routeLines[routeName] = {
+                forward: route.stops,
+                reverse: [...route.stops].reverse()
+            };
+        });
+
+        return routeLines;
     };
 
-    // Define the Blue Line routes with a common transfer point
-    const blueLine = {
-        forward: [
-            { name: 'Ghanta Ghar Stop', location: [30.9038, 75.8443] }, // Common transfer point
-            { name: 'Mini Secretariat Stop', location: [30.9168, 75.8485] },
-            { name: 'Guru Nanak Stadium Stop', location: [30.9048, 75.8647] },
-            { name: 'Rose Garden Stop', location: [30.8937, 75.8294] },
-            { name: 'Punjab Agricultural University Stop', location: [30.8988, 75.8091] },
-        ],
-        reverse: [
-            { name: 'Punjab Agricultural University Stop', location: [30.8988, 75.8091] },
-            { name: 'Rose Garden Stop', location: [30.8937, 75.8294] },
-            { name: 'Guru Nanak Stadium Stop', location: [30.9048, 75.8647] },
-            { name: 'Mini Secretariat Stop', location: [30.9168, 75.8485] },
-            { name: 'Ghanta Ghar Stop', location: [30.9038, 75.8443] }
-        ]
-    };
+    const routeLines = getRouteLines();
     
     // Updated search logic to filter buses
     const handleSearch = () => {
         // Find the lines that each stop is on
-        const departureOnRed = redLine.forward.some(stop => stop.name.toLowerCase().includes(departure.toLowerCase()));
-        const departureOnBlue = blueLine.forward.some(stop => stop.name.toLowerCase().includes(departure.toLowerCase()));
-        const destinationOnRed = redLine.forward.some(stop => stop.name.toLowerCase().includes(destination.toLowerCase()));
-        const destinationOnBlue = blueLine.forward.some(stop => stop.name.toLowerCase().includes(destination.toLowerCase()));
+        const departureOnRed = routeLines.redLine?.forward?.some(stop => stop.name.toLowerCase().includes(departure.toLowerCase()));
+        const departureOnBlue = routeLines.blueLine?.forward?.some(stop => stop.name.toLowerCase().includes(departure.toLowerCase()));
+        const destinationOnRed = routeLines.redLine?.forward?.some(stop => stop.name.toLowerCase().includes(destination.toLowerCase()));
+        const destinationOnBlue = routeLines.blueLine?.forward?.some(stop => stop.name.toLowerCase().includes(destination.toLowerCase()));
     
         if (!departure || !destination) {
             setMessage('Please enter both a departure and a destination.');
@@ -89,15 +162,15 @@ export default function PassengerDashboard() {
         // Check if both stops are on the same line
         if ((departureOnRed && destinationOnRed)) {
             setMessage('No bus change needed. The entire journey is on a single route.');
-            setFilteredBuses(availableBuses.filter(bus => bus.route === "Red Line"));
+            setFilteredBuses(filteredBuses.filter(bus => bus.route === "Red Line"));
         } else if ((departureOnBlue && destinationOnBlue)) {
              setMessage('No bus change needed. The entire journey is on a single route.');
-            setFilteredBuses(availableBuses.filter(bus => bus.route === "Blue Line"));
+            setFilteredBuses(filteredBuses.filter(bus => bus.route === "Blue Line"));
         }
         // Check if a transfer is needed at Ghanta Ghar
         else if ((departureOnRed && destinationOnBlue) || (departureOnBlue && destinationOnRed)) {
             setMessage('Bus change required. Take the bus to Ghanta Ghar Stop, then transfer to the other line.');
-            setFilteredBuses(availableBuses); // Show all buses for the transfer
+            setFilteredBuses(filteredBuses); // Show all buses for the transfer
         } 
         // If the stops are not on either defined route
         else {
@@ -111,7 +184,7 @@ export default function PassengerDashboard() {
         const value = e.target.value;
         setDeparture(value);
         if (value) {
-            const filteredStops = busStops.filter(stop => 
+            const filteredStops = allStops.filter(stop => 
                 stop.name.toLowerCase().includes(value.toLowerCase())
             );
             setDepartureSuggestions(filteredStops);
@@ -124,7 +197,7 @@ export default function PassengerDashboard() {
         const value = e.target.value;
         setDestination(value);
         if (value) {
-            const filteredStops = busStops.filter(stop => 
+            const filteredStops = allStops.filter(stop => 
                 stop.name.toLowerCase().includes(value.toLowerCase()) && 
                 stop.name.toLowerCase() !== departure.toLowerCase()
             );
@@ -134,18 +207,30 @@ export default function PassengerDashboard() {
         }
     };
     
-    // Updated available buses array to reflect the new routes and bus count
-    const allBuses = [
-        { id: 'BUS-001', name: 'Bus 1', status: 'Active', routeName: 'Red Line', location: redLine.forward[0].location },
-        { id: 'BUS-002', name: 'Bus 2', status: 'Active', routeName: 'Blue Line', location: blueLine.forward[0].location },
-        { id: 'BUS-003', name: 'Bus 3', status: 'Active', routeName: 'Red Line', location: redLine.forward[2].location },
-        { id: 'BUS-004', name: 'Bus 4', status: 'Active', routeName: 'Blue Line', location: blueLine.forward[2].location },
+    // Get all buses for tracking map
+    const allBuses = buses.length > 0 ? buses : [
+        { id: 'BUS-001', name: 'Bus 1', status: 'Active', routeName: 'Red Line', location: [30.8974, 75.8569] },
+        { id: 'BUS-002', name: 'Bus 2', status: 'Active', routeName: 'Blue Line', location: [30.8872, 75.8458] },
     ];
     
     // Dummy data for the "on-board" tracking map.
-    const myBus = [
-        { id: 'BUS-001', name: 'My Bus', status: 'On-board', routeName: 'Red Line', location: redLine.forward[1].location }
+    const myBus = buses.length > 0 ? [buses[0]] : [
+        { id: 'BUS-001', name: 'My Bus', status: 'On-board', routeName: 'Red Line', location: [30.8992, 75.8488] }
     ];
+
+    if (loading) {
+        return (
+            <div className="flex bg-gray-100 min-h-screen">
+                <Sidebar active="Dashboard" />
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                        <p className="text-gray-600">Loading passenger data...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex bg-gray-100 min-h-screen">
@@ -156,23 +241,31 @@ export default function PassengerDashboard() {
                         <h1 className="text-3xl font-bold text-gray-800">Passenger Dashboard</h1>
                         <p className="text-gray-500">Find and book your next journey</p>
                     </div>
-                    <button className="px-6 py-2 rounded-md font-medium text-sm text-white bg-teal-600 hover:bg-teal-700 transition duration-200">
-                        My Tickets
-                    </button>
+                    <div className="flex space-x-2">
+                        <button 
+                            onClick={loadPassengerData}
+                            className="px-4 py-2 rounded-md font-medium text-sm text-teal-600 bg-teal-50 hover:bg-teal-100 transition duration-200"
+                        >
+                            Refresh
+                        </button>
+                        <button className="px-6 py-2 rounded-md font-medium text-sm text-white bg-teal-600 hover:bg-teal-700 transition duration-200">
+                            My Tickets
+                        </button>
+                    </div>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     {/* First map for all buses */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 w-full h-[500px]">
                         <h3 className="text-xl font-semibold text-gray-800 mb-4">Track All Buses</h3>
                         <div className="w-full h-[400px]">
-                           <Map buses={allBuses} stops={busStops} redLine={redLine} blueLine={blueLine} />
+                           <Map buses={allBuses} stops={allStops} redLine={routeLines.redLine} blueLine={routeLines.blueLine} />
                         </div>
                     </div>
                     {/* Second map for my bus */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 w-full h-[500px]">
                         <h3 className="text-xl font-semibold text-gray-800 mb-4">My Bus</h3>
                         <div className="w-full h-[400px]">
-                           <Map buses={myBus} stops={busStops} redLine={redLine} blueLine={blueLine} />
+                           <Map buses={myBus} stops={allStops} redLine={routeLines.redLine} blueLine={routeLines.blueLine} />
                         </div>
                     </div>
                 </div>
