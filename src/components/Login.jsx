@@ -1,21 +1,45 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from "react-router-dom";
-import backgroundImageVideo from '../assets/videos/final animation.mp4'; // Import your video file here
+import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
+import backgroundImageVideo from '../assets/videos/final animation.mp4';
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("admin");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const { login } = useAuth();
+  const { showSuccess, showError } = useNotification();
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (role === "admin") {
-      navigate('/admin');
-    } else if (role === "driver") {
-      navigate('/driver');
-    } else {
-      navigate('/passenger');
+    setLoading(true);
+    setError("");
+
+    try {
+      const result = await login(email, password);
+      if (result.success) {
+        showSuccess('Login successful!');
+        // Redirect based on user role
+        const user = JSON.parse(localStorage.getItem('user'));
+        const roleRoutes = {
+          admin: '/admin',
+          driver: '/driver',
+          passenger: '/passenger'
+        };
+        navigate(roleRoutes[user.role] || '/admin');
+      } else {
+        setError(result.error);
+        showError(result.error);
+      }
+    } catch (err) {
+      const errorMessage = 'An unexpected error occurred';
+      setError(errorMessage);
+      showError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,6 +75,12 @@ export default function Login() {
           </p>
 
           <form onSubmit={handleLogin} className="space-y-6">
+            {error && (
+              <div className="p-3 rounded-md bg-red-100 text-red-800 text-sm">
+                {error}
+              </div>
+            )}
+            
             <div>
               <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
               <input
@@ -59,6 +89,7 @@ export default function Login() {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
               />
             </div>
@@ -71,30 +102,25 @@ export default function Login() {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
               />
             </div>
 
             <div>
-              <label htmlFor="role" className="text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
-              >
-                <option value="admin">Admin</option>
-                <option value="driver">Driver</option>
-                <option value="passenger">Passenger</option>
-              </select>
-            </div>
-
-            <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition duration-200"
+                disabled={loading}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign In
+                {loading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Signing In...
+                  </div>
+                ) : (
+                  'Sign In'
+                )}
               </button>
             </div>
           </form>

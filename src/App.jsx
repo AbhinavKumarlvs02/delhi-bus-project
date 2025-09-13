@@ -1,4 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import ForgotPassword from "./components/ForgotPassword";
@@ -10,16 +13,47 @@ import PassengerDashboard from "./pages/PassengerDashboard";
 // All pages are rendered inside the Router component.
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/driver" element={<DriverDashboard />} />
-        <Route path="/passenger" element={<PassengerDashboard />} />
-      </Routes>
-    </Router>
+    <NotificationProvider>
+      <AuthProvider>
+        <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+
+          {/* Protected routes */}
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/driver" 
+            element={
+              <ProtectedRoute requiredRole="driver">
+                <DriverDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/passenger" 
+            element={
+              <ProtectedRoute requiredRole="passenger">
+                <PassengerDashboard />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Default redirect */}
+          <Route path="/" element={<Navigate to="/login" />} />
+        </Routes>
+        </Router>
+      </AuthProvider>
+    </NotificationProvider>
   );
 }
 
