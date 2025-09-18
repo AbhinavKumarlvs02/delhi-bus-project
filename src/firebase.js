@@ -1,17 +1,20 @@
+// src/firebase.js
+
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
+// Replace the old object with this one
 const firebaseConfig = {
-  apiKey: "AIzaSyBE6eEetL1zO64mYNJQhMqtIOLWFJod7Uk",
-  authDomain: "bustracking-a2534.firebaseapp.com",
-  projectId: "bustracking-a2534",
-  storageBucket: "bustracking-a2534.firebasestorage.app",
-  messagingSenderId: "207381470425",
-  appId: "1:207381470425:web:b76177c06b368f3e35f2c8",
-  measurementId: "G-TW4E974TDG"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebasea
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
