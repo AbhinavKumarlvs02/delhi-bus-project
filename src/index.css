@@ -2,8 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-/* The map container will now fill 100% of its parent div, not the whole viewport. */
-.leaflet-container {
-  height: 100%;
-  width: 90%;
+body {
+
+  background-color: #0f172a; 
+  color: #e2e8f0; 
+}
+
+
+.glass-card {
+  background: rgba(30, 41, 59, 0.5); 
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 16px 40px 0 rgba(0, 0, 0, 0.3);
+}
+
+
+.form-input {
+  background: rgba(15, 23, 42, 0.5); 
+  border: 1px solid #475569; /* Slate 600 */
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.form-input:focus {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: #2dd4bf; 
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.3);
+}
+
+
+@layer components {
+  .btn {
+    @apply w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white transition-all duration-300 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900;
+  }
+  .btn-teal {
+    background-image: linear-gradient(to right, #2dd4bf 0%, #34d399 50%, #2dd4bf 100%);
+    background-size: 200% auto;
+    color: white;
+    box-shadow: 0 4px 15px 0 rgba(45, 212, 191, 0.4);
+  }
+  .btn-teal:hover {
+    background-position: right center; 
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px 0 rgba(45, 212, 191, 0.5);
+  }
+  .btn-teal:active {
+    transform: translateY(0px) scale(0.98);
+    box-shadow: 0 2px 10px 0 rgba(45, 212, 191, 0.4);
+  }
+}
+
+.link-style {
+  @apply font-medium text-teal-400 transition-all duration-300 ease-in-out;
+}
+.link-style:hover {
+  @apply text-teal-300 underline underline-offset-4;
 }
