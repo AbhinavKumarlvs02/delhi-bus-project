@@ -1,10 +1,10 @@
 import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import busStopIconPng from '../assets/icon/bus-station.png';
 
-// This is the standard fix for Leaflet's default icon issue with modern bundlers.
+// Standard fix for Leaflet's default icon issue
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -12,7 +12,7 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
-// Custom bus icon
+// Custom icons
 const busIcon = new L.Icon({
     iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448378.png',
     iconSize: [32, 32],
@@ -20,7 +20,6 @@ const busIcon = new L.Icon({
     popupAnchor: [0, -32],
 });
 
-// Custom bus stop icon
 const stopIcon = new L.Icon({
     iconUrl: busStopIconPng,
     iconSize: [32, 32],
@@ -28,7 +27,17 @@ const stopIcon = new L.Icon({
     popupAnchor: [0, -32],
 });
 
-export default function Map({ buses = [], stops = [], redLine, blueLine, route }) {
+// Component to handle map clicks for route planning
+const LocationMarker = ({ onMapClick }) => {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng);
+    },
+  });
+  return null;
+};
+
+export default function Map({ buses = [], stops = [], redLine, blueLine, route, onMapClick, plannedRoute }) {
     const position = [30.9009, 75.8573]; // Ludhiana center
     
     const ludhianaBounds = [
@@ -36,11 +45,8 @@ export default function Map({ buses = [], stops = [], redLine, blueLine, route }
         [31.1, 76.1],
     ];
     
-    // Extract coordinates safely, checking if the routes exist
     const redLineForwardCoords = redLine?.forward?.map(stop => stop.location);
-    const redLineReverseCoords = redLine?.reverse?.map(stop => stop.location);
     const blueLineForwardCoords = blueLine?.forward?.map(stop => stop.location);
-    const blueLineReverseCoords = blueLine?.reverse?.map(stop => stop.location);
 
     return (
         <MapContainer
@@ -57,25 +63,23 @@ export default function Map({ buses = [], stops = [], redLine, blueLine, route }
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
             
-            {/* Draw the Red Line routes if they exist */}
-            {redLineForwardCoords && <Polyline positions={redLineForwardCoords} pathOptions={{ color: 'red', weight: 5, opacity: 0.8 }} />}
-            {redLineReverseCoords && <Polyline positions={redLineReverseCoords} pathOptions={{ color: 'red', weight: 5, opacity: 0.5, dashArray: '10, 10' }} />}
+            {onMapClick && <LocationMarker onMapClick={onMapClick} />}
 
-            {/* Draw the Blue Line routes if they exist */}
+            {redLineForwardCoords && <Polyline positions={redLineForwardCoords} pathOptions={{ color: 'red', weight: 5, opacity: 0.8 }} />}
             {blueLineForwardCoords && <Polyline positions={blueLineForwardCoords} pathOptions={{ color: 'blue', weight: 5, opacity: 0.8 }} />}
-            {blueLineReverseCoords && <Polyline positions={blueLineReverseCoords} pathOptions={{ color: 'blue', weight: 5, opacity: 0.5, dashArray: '10, 10' }} />}
-            
-            {/* Draw a single route if provided (for DriverDashboard) */}
             {route && <Polyline positions={route} pathOptions={{ color: 'green', weight: 6, opacity: 0.9 }} />}
 
-            {/* Render all bus stops as markers */}
+            {/* Draw the planned route */}
+            {plannedRoute && plannedRoute.path && <Polyline positions={plannedRoute.path} pathOptions={{ color: '#00A99D', weight: 8, opacity: 1 }} />}
+            {plannedRoute && plannedRoute.origin && <Marker position={plannedRoute.origin} />}
+            {plannedRoute && plannedRoute.destination && <Marker position={plannedRoute.destination} />}
+
             {stops.map(stop => (
                 <Marker key={stop.id} position={stop.location} icon={stopIcon}>
                     <Popup>{stop.name}</Popup>
                 </Marker>
             ))}
 
-            {/* Render all buses as markers */}
             {buses.map(bus => (
                 <Marker key={bus.id} position={bus.location} icon={busIcon}>
                     <Popup>

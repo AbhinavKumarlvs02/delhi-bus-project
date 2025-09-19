@@ -180,8 +180,7 @@ export default function Login() {
         setError(result.error);
         showError(result.error);
       }
-    } catch (err)
- {
+    } catch (err) {
       const errorMessage = 'An unexpected error occurred';
       setError(errorMessage);
       showError(errorMessage);
@@ -192,8 +191,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen md:grid md:grid-cols-2 lg:grid-cols-[1.5fr_1fr]">
-
-     
+      {/* Left side: This part remains untouched */}
       <div className="relative hidden md:flex items-center justify-center p-8 overflow-hidden">
         <video autoPlay loop muted className="absolute inset-0 w-full h-full object-cover">
           <source src={backgroundImageVideo} type="video/mp4" />
@@ -205,55 +203,55 @@ export default function Login() {
         </div>
       </div>
 
-  
       <div className="flex items-center justify-center w-full p-4 md:p-8">
-        <div className="glass-card p-8 md:p-10 w-full max-w-sm">
-          <h2 className="text-3xl font-bold text-center text-white mb-2">Welcome Back</h2>
-          <p className="text-center text-gray-300 mb-6 text-sm">
-            Sign in to your Bus Management account
-          </p>
+        <div className="glass-card p-8 md:p-10 w-full max-w-md">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
+            <p className="text-slate-400">Enter your credentials to access your dashboard.</p>
+          </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
             {error && (
-              <div className="p-3 rounded-md bg-red-500/30 border border-red-500 text-red-200 text-sm">{error}</div>
+              <div className="p-3 rounded-md bg-red-500/20 border border-red-500/30 text-red-300 text-sm font-medium">{error}</div>
             )}
 
-            <div>
-              <label htmlFor="email" className="text-sm font-medium text-gray-300">Email</label>
-              <input
-                type="email"
-                id="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-teal-500 sm:text-sm form-input"
-              />
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="email" className="text-sm font-medium text-slate-300 block mb-2">Email Address</label>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="form-input w-full"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="text-sm font-medium text-slate-300 block mb-2">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="form-input w-full"
+                />
+              </div>
             </div>
 
-            <div>
-              <label htmlFor="password" className="text-sm font-medium text-gray-300">Password</label>
-              <input
-                type="password"
-                id="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-teal-500 sm:text-sm form-input"
-              />
-            </div>
-
-            <div>
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transform hover:scale-105 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn btn-teal w-full"
               >
                 {loading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Signing In...
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   </div>
                 ) : (
                   'Sign In'
@@ -261,18 +259,32 @@ export default function Login() {
               </button>
             </div>
           </form>
+          
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-slate-700" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+                <span className="bg-slate-800 px-2 text-slate-400">OR</span>
+            </div>
+          </div>
 
-          <div className="mt-6">
+          <div>
             <GoogleLoginButton />
           </div>
 
-          <div className="flex justify-between mt-6 text-sm text-gray-300">
-            <Link to="/forgot-password" className="font-medium text-teal-400 hover:text-teal-300 hover:underline transition duration-300">
-              Forgot your password?
-            </Link>
-            <Link to="/register" className="font-medium text-teal-400 hover:text-teal-300 hover:underline transition duration-300">
-              Sign up
-            </Link>
+          <div className="mt-6 text-center text-sm">
+            <p className="text-slate-400">
+                Don't have an account?{' '}
+                <Link to="/register" className="font-semibold text-teal-400 hover:text-teal-300 hover:underline">
+                    Sign up
+                </Link>
+            </p>
+            <p className="mt-2 text-slate-400">
+                <Link to="/forgot-password" className="text-xs hover:underline">
+                    Forgot your password?
+                </Link>
+            </p>
           </div>
         </div>
       </div>
