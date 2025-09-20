@@ -10,25 +10,39 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState("passenger");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState({});
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const validate = () => {
+    const newErrors = {};
+    if (!fullName || fullName.length < 3) {
+      newErrors.fullName = "Full name must be at least 3 characters long.";
+    }
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "Please enter a valid email address.";
+    }
+    if (!password || password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters long.";
+    } else {
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(password)) {
+        newErrors.password = "Password must include at least one uppercase letter, one number, and one special character.";
+      }
+    }
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match.";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
-    
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
+    if (!validate()) {
       return;
     }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
-
     setLoading(true);
-    setError("");
 
     try {
       const result = await register(fullName, email, password, role);
@@ -41,10 +55,10 @@ export default function Register() {
         };
         navigate(roleRoutes[user.role] || '/passenger');
       } else {
-        setError(result.error);
+        setErrors({ form: result.error });
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setErrors({ form: 'An unexpected error occurred' });
     } finally {
       setLoading(false);
     }
@@ -71,7 +85,6 @@ export default function Register() {
         </div>
       </div>
 
-     
       <div className="flex items-center justify-center w-full p-4 md:p-8">
         <div className="glass-card p-8 md:p-10 w-full max-w-sm">
           <h2 className="text-3xl font-bold text-center text-white mb-2">Create Account</h2>
@@ -80,9 +93,9 @@ export default function Register() {
           </p>
 
           <form onSubmit={handleRegister} className="space-y-4">
-            {error && (
+            {errors.form && (
               <div className="p-3 rounded-md bg-red-500/30 border border-red-500 text-red-200 text-sm">
-                {error}
+                {errors.form}
               </div>
             )}
             
@@ -97,6 +110,7 @@ export default function Register() {
                 required
                 className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-teal-500 sm:text-sm form-input"
               />
+              {errors.fullName && <p className="text-red-400 text-xs mt-1">{errors.fullName}</p>}
             </div>
             <div>
               <label htmlFor="email" className="text-sm font-medium text-gray-300">Email</label>
@@ -109,22 +123,24 @@ export default function Register() {
                 required
                 className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-teal-500 sm:text-sm form-input"
               />
+              {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
             </div>
             <div>
-              <label htmlFor="password" className="text-sm font-medium text-gray-300">Password</label>
+              <label htmlFor="password" aclassName="text-sm font-medium text-gray-300">Password</label>
               <input
                 type="password"
                 id="password"
-                placeholder="Create a password (min 6 characters)"
+                placeholder="Create a password (min 8 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
                 className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-teal-500 sm:text-sm form-input"
               />
+              {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
             </div>
             <div>
-              <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-300">Confirm Password</label>
+              <label htmlFor="confirmPassword" aclassName="text-sm font-medium text-gray-300">Confirm Password</label>
               <input
                 type="password"
                 id="confirmPassword"
@@ -134,17 +150,18 @@ export default function Register() {
                 required
                 className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-teal-500 sm:text-sm form-input"
               />
+              {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>}
             </div>
             <div>
-              <label htmlFor="role" className="text-sm font-medium text-gray-300">Role</label>
+              <label htmlFor="role" aclassName="text-sm font-medium text-gray-300">Role</label>
               <select
                 id="role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm text-white focus:outline-none focus:ring-teal-500 sm:text-sm form-input appearance-none"
               >
-                <option className="bg-gray-700" value="passenger">Passenger</option>
-                <option className="bg-gray-700" value="driver">Driver</option>
+                <option aclassName="bg-gray-700" value="passenger">Passenger</option>
+                <option aclassName="bg-gray-700" value="driver">Driver</option>
               </select>
             </div>
 

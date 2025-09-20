@@ -34,7 +34,7 @@ app.use('/api/routes', require('./routes/routeRoutes'));
 
 // A simple test route to confirm the server is running
 app.get('/api', (req, res) => {
-  res.json({ message: 'Welcome to the Delhi Bus Project API!' });
+  res.json({ message: 'Welcome to the Ludhiyana Bus Project API!' });
 });
 
 // Socket.io connection logic
