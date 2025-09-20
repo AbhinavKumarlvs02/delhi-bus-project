@@ -9,6 +9,7 @@ export default function DriverDashboard() {
     const [buses, setBuses] = useState([]);
     const [routes, setRoutes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // Default bus stops for Ludhiana (fallback data)
     const defaultBusStops = [
@@ -31,24 +32,17 @@ export default function DriverDashboard() {
     const loadDriverData = async () => {
         try {
             setLoading(true);
-            
-            // Fetch buses and routes from backend
             const [busesData, routesData] = await Promise.all([
                 dataService.getBuses(),
                 dataService.getRoutes()
             ]);
-
             const transformedBuses = dataService.transformBusData(busesData);
             const transformedRoutes = dataService.transformRouteData(routesData);
-
-            // Filter buses for this driver (in real app, this would be based on driver assignment)
             const driverBus = transformedBuses.length > 0 ? [transformedBuses[0]] : [];
-
             setBuses(driverBus);
             setRoutes(transformedRoutes);
         } catch (err) {
             console.error('Error loading driver data:', err);
-            // Fallback to sample data
             setBuses([{ id: 'BUS-001', name: 'Bus 001', status: 'Active', route: 'Junction to Rose Garden', location: [30.8974, 75.8569] }]);
             setRoutes([]);
         } finally {
@@ -56,7 +50,6 @@ export default function DriverDashboard() {
         }
     };
 
-    // Get current trip data from backend or use defaults
     const currentTrip = buses.length > 0 ? {
         route: buses[0].routeName || "Junction to Rose Garden",
         time: "08:00 AM - 06:00 PM",
@@ -73,7 +66,6 @@ export default function DriverDashboard() {
         totalPassengers: 40
     };
 
-    // Generate schedule from backend data
     const schedule = buses.map((bus, index) => ({
         time: `${8 + index * 3}:00 AM`,
         status: index === 0 ? "active" : "upcoming",
@@ -87,128 +79,117 @@ export default function DriverDashboard() {
         { type: "completed", text: "Trip Completed: Morning route completed successfully. Great job!", time: "2 hours ago" }
     ];
 
-    const vehicleStatus = { fuel: 75, mileage: "45,230 km", lastMaintenance: "Dec 15, 2024", nextMaintenance: "Jan 15, 2025" };
-
-    // Get driver route from backend data or use defaults
     const driverRoute = routes.length > 0 && routes[0]?.stops 
         ? routes[0].stops.map(stop => stop.location)
-        : [
-            [30.8974, 75.8569],
-            [30.8992, 75.8488],
-            [30.8937, 75.8294],
-            [30.8808, 75.8078],
-        ];
+        : [[30.8974, 75.8569], [30.8992, 75.8488], [30.8937, 75.8294], [30.8808, 75.8078]];
 
-    const allStops = routes.length > 0 
-        ? routes.flatMap(route => route.stops)
-        : defaultBusStops;
+    const allStops = routes.length > 0 ? routes.flatMap(route => route.stops) : defaultBusStops;
 
     if (loading) {
         return (
-            <div className="flex bg-gray-100 min-h-screen">
-                <Sidebar active="Dashboard" />
-                <div className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600">Loading driver data...</p>
-                    </div>
+            <div className="flex bg-gray-900 text-white min-h-screen items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-400 mx-auto mb-4"></div>
+                    <p>Loading driver data...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex bg-gray-100 min-h-screen">
-            <Sidebar active="Dashboard" />
-            <div className="flex-1 p-8">
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-800">Driver Dashboard</h1>
-                        <p className="text-gray-500">Welcome back, {user?.role || 'Driver'}</p>
-                    </div>
-                    <div className="flex space-x-2">
-                        <button 
-                            onClick={loadDriverData}
-                            className="px-4 py-2 rounded-md font-medium text-sm text-teal-600 bg-teal-50 hover:bg-teal-100 transition duration-200"
-                        >
-                            Refresh
-                        </button>
-                        <button className="px-6 py-2 rounded-md font-medium text-sm text-white bg-teal-600 hover:bg-teal-700 transition duration-200">
-                            Start Trip
-                        </button>
-                    </div>
-                </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 w-full h-[500px]">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-4">Your Assigned Route</h3>
-                        <div className="w-full h-[400px]">
-                           <Map buses={buses} route={driverRoute} stops={allStops} />
+        <div className="flex h-screen bg-gray-900 text-white">
+            <Sidebar active="Dashboard" isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+            <div className="flex-1 flex flex-col overflow-hidden">
+                <header className="lg:hidden p-4 bg-gray-800/50 backdrop-blur-sm border-b border-gray-700/50 flex items-center space-x-4">
+                    <button onClick={() => setIsSidebarOpen(true)} className="text-gray-300">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <h1 className="text-xl font-bold">Driver Dashboard</h1>
+                </header>
+                <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8">
+                    <div className="hidden lg:flex justify-between items-center mb-6">
+                        <div>
+                            <h1 className="text-3xl font-bold">Driver Dashboard</h1>
+                            <p className="text-gray-400">Welcome back, {user?.role || 'Driver'}</p>
+                        </div>
+                        <div className="flex space-x-2">
+                            <button onClick={loadDriverData} className="btn btn-secondary">
+                                Refresh
+                            </button>
+                            <button className="btn btn-teal">
+                                Start Trip
+                            </button>
                         </div>
                     </div>
-                    
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-4">Current Trip</h3>
-                        <div className="space-y-4 text-gray-600">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <div className="text-sm font-medium">Route</div>
-                                    <div className="font-semibold text-gray-800">{currentTrip.route}</div>
-                                    <div className="text-xs text-gray-500">{currentTrip.time}</div>
-                                </div>
-                                <div>
-                                    <div className="text-sm font-medium">Passengers</div>
-                                    <div className="font-semibold text-gray-800">{currentTrip.passengers}/{currentTrip.totalPassengers}</div>
-                                </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div className="glass-card w-full h-[500px]">
+                            <h3 className="text-xl font-semibold mb-4">Your Assigned Route</h3>
+                            <div className="w-full h-[400px] rounded-lg overflow-hidden">
+                               <Map buses={buses} route={driverRoute} stops={allStops} />
                             </div>
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <div className="text-sm font-medium">Current Location</div>
-                                    <div className="font-semibold text-gray-800">{currentTrip.current}</div>
-                                    <div className="text-xs text-gray-500">Next: {currentTrip.next}</div>
+                        </div>
+                        <div className="glass-card">
+                            <h3 className="text-xl font-semibold mb-4">Current Trip</h3>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <div className="text-sm text-gray-400">Route</div>
+                                        <div className="font-semibold">{currentTrip.route}</div>
+                                        <div className="text-xs text-gray-500">{currentTrip.time}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-sm text-gray-400">Passengers</div>
+                                        <div className="font-semibold">{currentTrip.passengers}/{currentTrip.totalPassengers}</div>
+                                    </div>
                                 </div>
-                                <div className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-600 font-semibold">In Progress</div>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <div className="text-sm text-gray-400">Current Location</div>
+                                        <div className="font-semibold">{currentTrip.current}</div>
+                                        <div className="text-xs text-gray-500">Next: {currentTrip.next}</div>
+                                    </div>
+                                    <div className="text-xs px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 font-semibold">In Progress</div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-4">Today's Schedule</h3>
-                        <div className="space-y-4">
-                            {schedule.map(trip => (
-                                <div key={trip.time} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                                    <div className="flex space-x-4 items-center">
-                                        <div className="text-xl">{trip.time}</div>
-                                        <div className="flex flex-col">
-                                            <div className="font-semibold text-gray-800">{trip.route}</div>
-                                            <div className="text-xs text-gray-500">{trip.stops} stops</div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="glass-card">
+                            <h3 className="text-xl font-semibold mb-4">Today's Schedule</h3>
+                            <div className="space-y-4">
+                                {schedule.map(trip => (
+                                    <div key={trip.time} className="flex justify-between items-center p-4 bg-gray-800/50 rounded-lg hover-lift">
+                                        <div className="flex space-x-4 items-center">
+                                            <div className="text-xl">{trip.time}</div>
+                                            <div className="flex flex-col">
+                                                <div className="font-semibold">{trip.route}</div>
+                                                <div className="text-xs text-gray-400">{trip.stops} stops</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex space-x-2">
+                                            <div className={`px-2 py-1 rounded-full text-xs font-semibold ${trip.status === 'active' ? 'bg-green-500/20 text-green-300' : 'bg-blue-500/20 text-blue-300'}`}>{trip.status}</div>
+                                            <button className="text-sm text-teal-400 hover:underline">View Route</button>
                                         </div>
                                     </div>
-                                    <div className="flex space-x-2">
-                                        <div className={`px-2 py-1 rounded-full text-xs font-semibold ${trip.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>{trip.status}</div>
-                                        <button className="text-sm text-teal-600 hover:underline">View Route</button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="glass-card">
+                            <h3 className="text-xl font-semibold mb-4">Notifications</h3>
+                            <div className="space-y-4">
+                                {notifications.map((notif, index) => (
+                                    <div key={index} className="p-4 rounded-lg bg-gray-800/50 hover-lift">
+                                        <div className="flex space-x-2 items-center">
+                                            <div className="text-lg">{notif.type === 'alert' ? '🔔' : notif.type === 'update' ? '📣' : '✅'}</div>
+                                            <div className="text-sm font-medium">{notif.text}</div>
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-1">{notif.time}</div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-4">Notifications</h3>
-                        <div className="space-y-4">
-                            {notifications.map((notif, index) => (
-                                <div key={index} className="p-4 rounded-lg bg-gray-50">
-                                    <div className="flex space-x-2 items-center">
-                                        <div className="text-lg">{notif.type === 'alert' ? '🔔' : notif.type === 'update' ? '📣' : '✅'}</div>
-                                        <div className="text-sm font-medium text-gray-800">{notif.text}</div>
-                                    </div>
-                                    <div className="text-xs text-gray-400 mt-1">{notif.time}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+                </main>
             </div>
         </div>
     );
