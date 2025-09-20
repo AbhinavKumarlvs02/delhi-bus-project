@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-require('dotenv').config({ path: '../.env' });
+// require('dotenv').config({ path: '../.env' });
+require('dotenv').config();
 
 // Import models
 const User = require('./models/userModel');
@@ -8,7 +9,7 @@ const Bus = require('./models/busModel');
 const Route = require('./models/routeModel');
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/delhi-bus-project');
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/delhi-bus-project');
 
 const sampleRoutes = [
     {

@@ -22,19 +22,26 @@ const io = new Server(server, {
         methods: ["GET", "POST"]
     }
 });
+app.set('io' ,io);
 
 // Express Middleware
 app.use(cors()); // Enable Cross-Origin Resource Sharing
 app.use(express.json()); // To parse JSON bodies
+app.use(express.urlencoded({ extended: false })); // to parse Twilio/GSM form data
 
 // API Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/buses', require('./routes/busRoutes'));
 app.use('/api/routes', require('./routes/routeRoutes'));
 
+app.use('/sms' , require('./routes/smsRoutes'));
+app.use('/api/location' , require("./routes/locationRoutes"))
+app.use('/api/buses' , require("./routes/liveRoutes"))
+
+
 // A simple test route to confirm the server is running
 app.get('/api', (req, res) => {
-  res.json({ message: 'Welcome to the Ludhiyana Bus Project API!' });
+  res.json({ message: 'Welcome to the Delhi Bus Project API!' });
 });
 
 // Socket.io connection logic
