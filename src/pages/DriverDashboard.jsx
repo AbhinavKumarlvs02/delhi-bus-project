@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useRef} from 'react';
+import { sendLocation } from '../services/locationAPI';
 import Sidebar from '../components/Sidebar';
 import Map from '../components/Map';
 import { dataService } from '../services/dataService';
@@ -10,6 +11,14 @@ export default function DriverDashboard() {
     const [routes, setRoutes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    const [running, setRunning] = useState(false);
+    const watchIdRef = useRef(null);
+    const lastSentRef = useRef(0);
+
+    const driverBus = buses?.[0] ?? null;
+    const busNumber =
+    driverBus?.busNumber || driverBus?.name || "BUS12";
 
     // Default bus stops for Ludhiana (fallback data)
     const defaultBusStops = [
@@ -24,6 +33,36 @@ export default function DriverDashboard() {
         { id: 'stop-9', name: 'Mini Secretariat Stop', location: [30.9168, 75.8485] },
         { id: 'stop-10', name: 'Model Town Market Stop', location: [30.8711, 75.8236] },
     ];
+
+    const pushLocation = async ({ lat, lon, speed }) => {
+        try {
+        await sendLocation({ busNumber, lat, lon, speed: Math.max(0, Math.round((speed || 0) * 3.6)) });
+        } catch (e) {
+        console.error("sendLocation error:", e);
+        }
+    };
+
+    const startTrip = () => {
+        if (running) return;
+        setRunning(true);
+        watchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+            const now = Date.now();
+            if (now - lastSentRef.current < 15000) return; // throttle 15s
+            lastSentRef.current = now;
+            const { latitude, longitude, speed } = pos.coords;
+            pushLocation({ lat: latitude, lon: longitude, speed });
+        },
+        (err) => console.error("geo error", err),
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+        );
+    };
+
+    const stopTrip = () => {
+        setRunning(false);
+        if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
+    };
+
 
     useEffect(() => {
         loadDriverData();
@@ -116,9 +155,16 @@ export default function DriverDashboard() {
                             <button onClick={loadDriverData} className="btn btn-secondary">
                                 Refresh
                             </button>
-                            <button className="btn btn-teal">
+                            <button onClick={startTrip} className="btn btn-teal">
                                 Start Trip
                             </button>
+                            <button onClick={stopTrip} className="btn btn-secondary" disabled={!running}>
+                                Stop
+                            </button>
+                        </div>
+                         <div className="glass-card mt-6">
+                            <h3 className="text-xl font-semibold mb-2">Your Assigned Route</h3>
+                            <Map buses={buses} stops={allStops} />
                         </div>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

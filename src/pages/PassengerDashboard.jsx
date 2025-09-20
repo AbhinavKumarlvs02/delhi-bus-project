@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import Map from '../components/Map';
+import { getLiveBuses } from '../services/locationAPI';
 import { dataService } from '../services/dataService';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -20,9 +21,51 @@ export default function PassengerDashboard() {
 
     const [filteredBuses, setFilteredBuses] = useState([]);
 
+    const [allBuses, setAllBuses] = useState([]);   // for “Track All Buses” map
+    const [myBus, setMyBus] = useState(null);
+    const timerRef = useRef(null);
+
     useEffect(() => {
         loadPassengerData();
+        loadLive();
+        timerRef.current = setInterval(loadLive, 10000); // 10s polling
+        return () => clearInterval(timerRef.current);
     }, []);
+
+    const loadLive = async () => {
+        try {
+            // last 30 min freshness (you can tweak)
+            const live = await getLiveBuses(30);  // returns normalized list if you used my locationApi.js
+            // If your getLiveBuses already normalizes, you can skip .map(normalize)
+            const list = live;
+
+            setAllBuses(list);
+
+            // pick a “my bus” if none selected yet
+            if (!myBus && list.length > 0) {
+            setMyBus(list[0]);
+            }
+        } catch (e) {
+            console.error("live buses error", e);
+        }
+    };
+
+    // useEffect(() => {
+    //     loadLive();
+    //     timerRef.current = setInterval(loadLive, 10000); // 10s polling
+    //     return () => clearInterval(timerRef.current);
+    // }, []);
+
+
+    const normalize = (live) => ({
+    id: live.busNumber,
+    name: live.busNumber,
+    status: live.status || "Active",
+    routeName: live.routeName || "",
+    location: [live.lat, live.lon],
+    speed: live.speed ?? 0,
+    lastSeenAt: live.lastSeenAt,
+    });
 
     const loadPassengerData = async () => {
         try {
@@ -208,16 +251,16 @@ export default function PassengerDashboard() {
         }
     };
 
-    // Get all buses for tracking map
-    const allBuses = buses.length > 0 ? buses : [
-        { id: 'BUS-001', name: 'Bus 1', status: 'Active', routeName: 'Red Line', location: [30.8974, 75.8569] },
-        { id: 'BUS-002', name: 'Bus 2', status: 'Active', routeName: 'Blue Line', location: [30.8872, 75.8458] },
-    ];
+    // // Get all buses for tracking map
+    // const allBuses = buses.length > 0 ? buses : [
+    //     { id: 'BUS-001', name: 'Bus 1', status: 'Active', routeName: 'Red Line', location: [30.8974, 75.8569] },
+    //     { id: 'BUS-002', name: 'Bus 2', status: 'Active', routeName: 'Blue Line', location: [30.8872, 75.8458] },
+    // ];
 
-    // Dummy data for the "on-board" tracking map.
-    const myBus = buses.length > 0 ? [buses[0]] : [
-        { id: 'BUS-001', name: 'My Bus', status: 'On-board', routeName: 'Red Line', location: [30.8992, 75.8488] }
-    ];
+    // // Dummy data for the "on-board" tracking map.
+    // const myBus = buses.length > 0 ? [buses[0]] : [
+    //     { id: 'BUS-001', name: 'My Bus', status: 'On-board', routeName: 'Red Line', location: [30.8992, 75.8488] }
+    // ];
 
     if (loading) {
         return (
@@ -265,7 +308,7 @@ export default function PassengerDashboard() {
                         <div className="glass-card w-full h-[500px]">
                             <h3 className="text-xl font-semibold mb-4">My Bus</h3>
                             <div className="w-full h-[400px] rounded-lg overflow-hidden">
-                                <Map buses={myBus} stops={allStops} redLine={routeLines.redLine} blueLine={routeLines.blueLine} />
+                                <Map buses={myBus ? [myBus] : []} stops={allStops} redLine={routeLines.redLine} blueLine={routeLines.blueLine} />
                             </div>
                         </div>
                     </div>
