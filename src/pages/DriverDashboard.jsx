@@ -1,4 +1,4 @@
-import React, { useState, useEffect , useRef} from 'react';
+import React, { useState, useEffect , useRef, useCallback} from 'react';
 import { sendLocation } from '../services/locationAPI';
 import Sidebar from '../components/Sidebar';
 import Map from '../components/Map';
@@ -42,44 +42,114 @@ export default function DriverDashboard() {
         }
     };
 
+    // const startTrip = async () => {
+    //     if (running) return;
+    //     await loadDriverData();
+    //     setRunning(true);
+    //     watchIdRef.current = navigator.geolocation.watchPosition(
+    //     (pos) => {
+    //         const now = Date.now();
+    //         if (now - lastSentRef.current < 15000) return; // throttle 15s
+    //         lastSentRef.current = now;
+    //         const { latitude, longitude, speed } = pos.coords;
+
+    //          // Update the local state to move the marker on the driver's map
+    //         setBuses(prevBuses => {
+    //             if (prevBuses.length > 0) {
+    //                 const updatedBus = { ...prevBuses[0], location: [latitude, longitude] };
+    //                 return [updatedBus];
+    //             }
+    //             return prevBuses;
+    //         });
+
+    //         pushLocation({ lat: latitude, lon: longitude, speed });
+    //     },
+    //     (err) => console.error("geo error", err),
+    //     { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+    //     );
+    // };
+
     const startTrip = () => {
-        if (running) return;
+        // Defensively stop any previous trip
+        stopTrip();
         setRunning(true);
-        watchIdRef.current = navigator.geolocation.watchPosition(
-        (pos) => {
-            const now = Date.now();
-            if (now - lastSentRef.current < 15000) return; // throttle 15s
-            lastSentRef.current = now;
-            const { latitude, longitude, speed } = pos.coords;
-            pushLocation({ lat: latitude, lon: longitude, speed });
-        },
-        (err) => console.error("geo error", err),
-        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+
+        // Get an initial position immediately to show the marker
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude, longitude } = pos.coords;
+                setBuses(prev => (prev.length > 0 ? [{ ...prev[0], location: [latitude, longitude] }] : []));
+                
+                // Send this first location to the server
+                pushLocation({ lat: latitude, lon: longitude, speed: pos.coords.speed });
+
+                // Now, start watching for continuous updates
+                watchIdRef.current = navigator.geolocation.watchPosition(
+                    (position) => {
+                        const { latitude, longitude, speed } = position.coords;
+                        setBuses(prev => (prev.length > 0 ? [{ ...prev[0], location: [latitude, longitude] }] : []));
+
+                        const now = Date.now();
+                        if (now - lastSentRef.current < 15000) return; // Throttle
+                        lastSentRef.current = now;
+                        pushLocation({ lat: latitude, lon: longitude, speed });
+                    },
+                    (err) => console.error("Geo watch error:", err),
+                    { enableHighAccuracy: true }
+                );
+            },
+            (err) => console.error("Geo get current position error:", err),
+            { enableHighAccuracy: true }
         );
+        
+        loadDriverData();
     };
 
     const stopTrip = () => {
+        // Stop the background watcher
+        if (watchIdRef.current) {
+            navigator.geolocation.clearWatch(watchIdRef.current);
+            watchIdRef.current = null;
+        }
+
+        // Set the trip status to not running
         setRunning(false);
-        if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
+
+        // Force the marker to disappear by setting the buses array to empty.
+        // This is the simplest and most reliable way.
+        setBuses([]); 
     };
 
 
     useEffect(() => {
         loadDriverData();
+
+        return () => {
+        stopTrip(); // Ensure the trip is stopped on unmount
+        };
+
     }, []);
 
     const loadDriverData = async () => {
         try {
-            setLoading(true);
-            const [busesData, routesData] = await Promise.all([
-                dataService.getBuses(),
-                dataService.getRoutes()
-            ]);
-            const transformedBuses = dataService.transformBusData(busesData);
-            const transformedRoutes = dataService.transformRouteData(routesData);
-            const driverBus = transformedBuses.length > 0 ? [transformedBuses[0]] : [];
-            setBuses(driverBus);
-            setRoutes(transformedRoutes);
+                setLoading(true);
+                const [busesData, routesData] = await Promise.all([
+                    dataService.getBuses(),
+                    dataService.getRoutes()
+                ]);
+                const transformedBuses = dataService.transformBusData(busesData);
+                const transformedRoutes = dataService.transformRouteData(routesData);
+                const driverBus = transformedBuses.length > 0 ? [transformedBuses[0]] : [];
+                setBuses(driverBus);
+                setRoutes(transformedRoutes);
+                if(running){
+                    setBuses(driverBus);
+                    setRoutes(transformedRoutes);
+                }
+                else{
+                    setBuses([]);
+                    setRoutes([]);
+                }
         } catch (err) {
             console.error('Error loading driver data:', err);
             setBuses([{ id: 'BUS-001', name: 'Bus 001', status: 'Active', route: 'Junction to Rose Garden', location: [30.8974, 75.8569] }]);
@@ -158,7 +228,7 @@ export default function DriverDashboard() {
                             <button onClick={startTrip} className="btn btn-teal">
                                 Start Trip
                             </button>
-                            <button onClick={stopTrip} className="btn btn-secondary" disabled={!running}>
+                            <button onClick={stopTrip} className="btn btn-secondary">
                                 Stop
                             </button>
                         </div>
@@ -171,7 +241,7 @@ export default function DriverDashboard() {
                         <div className="glass-card w-full h-[500px]">
                             <h3 className="text-xl font-semibold mb-4">Your Assigned Route</h3>
                             <div className="w-full h-[400px] rounded-lg overflow-hidden">
-                               <Map buses={buses} route={driverRoute} stops={allStops} />
+                               <Map buses={buses.filter(bus => Array.isArray(bus.location))} route={driverRoute} stops={allStops} />
                             </div>
                         </div>
                         <div className="glass-card">

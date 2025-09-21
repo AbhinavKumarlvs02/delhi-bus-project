@@ -26,10 +26,17 @@ export default function PassengerDashboard() {
     const timerRef = useRef(null);
 
     useEffect(() => {
+        // Load static data like routes once
         loadPassengerData();
+
+        // Fetch live data immediately on page load
         loadLive();
-        timerRef.current = setInterval(loadLive, 10000); // 10s polling
-        return () => clearInterval(timerRef.current);
+
+        // Set up a timer to re-fetch live data every 10 seconds
+        const timerId = setInterval(loadLive, 10000);
+
+        // Clean up the timer when the user navigates away to prevent errors
+        return () => clearInterval(timerId);
     }, []);
 
     const loadLive = async () => {
@@ -50,21 +57,55 @@ export default function PassengerDashboard() {
         }
     };
 
-    // useEffect(() => {
-    //     loadLive();
-    //     timerRef.current = setInterval(loadLive, 10000); // 10s polling
-    //     return () => clearInterval(timerRef.current);
-    // }, []);
+    // const loadLive = async () => {
+    //     try {
+    //         // Fetch the raw location data from your API
+    //         const liveBuses = await getLiveBuses(30);
+
+    //         // Safety Check: Make sure the API returned an array before we process it
+    //         if (!Array.isArray(liveBuses)) {
+    //             console.error("API did not return an array for live buses. Got:", liveBuses);
+    //             setAllBuses([]); // Set to an empty array to avoid crashing
+    //             return;
+    //         }
+
+    //         // Convert the raw data into the format the map component needs
+    //         const normalizedList = liveBuses.map(normalize);
+            
+    //         // Update the state for the "Track All Buses" map
+    //         setAllBuses(normalizedList);
+
+    //         // Logic to update the "My Bus" map if a bus is being tracked
+    //         if (myBus) {
+    //             const updatedMyBus = normalizedList.find(bus => bus.id === myBus.id);
+    //             if (updatedMyBus) {
+    //                 setMyBus(updatedMyBus);
+    //             }
+    //         } else if (normalizedList.length > 0) {
+    //             // If no bus is being tracked yet, pick the first one as an example
+    //             setMyBus(normalizedList[0]);
+    //         }
+    //     } catch (e) {
+    //         console.error("Failed to load live bus data:", e);
+    //     }
+    // };
+
+    useEffect(() => {
+        loadLive();
+        timerRef.current = setInterval(loadLive, 10000); // 10s polling
+        return () => clearInterval(timerRef.current);
+    }, []);
 
 
     const normalize = (live) => ({
-    id: live.busNumber,
-    name: live.busNumber,
-    status: live.status || "Active",
-    routeName: live.routeName || "",
-    location: [live.lat, live.lon],
-    speed: live.speed ?? 0,
-    lastSeenAt: live.lastSeenAt,
+        id: live.busNumber,
+        name: live.busNumber,
+        status: live.status || "Active",
+        routeName: live.routeName || "",
+        // Correctly reads the nested location from your MongoDB document
+        location: [live.currentLocation.lat, live.currentLocation.lng],
+        speed: live.speed ?? 0,
+        lastSeenAt: live.lastSeenAt,
     });
 
     const loadPassengerData = async () => {
@@ -251,7 +292,7 @@ export default function PassengerDashboard() {
         }
     };
 
-    // // Get all buses for tracking map
+    // Get all buses for tracking map
     // const allBuses = buses.length > 0 ? buses : [
     //     { id: 'BUS-001', name: 'Bus 1', status: 'Active', routeName: 'Red Line', location: [30.8974, 75.8569] },
     //     { id: 'BUS-002', name: 'Bus 2', status: 'Active', routeName: 'Blue Line', location: [30.8872, 75.8458] },
