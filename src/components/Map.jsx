@@ -52,9 +52,9 @@ export default function Map({ buses = [], stops = [], redLine, blueLine, route, 
         <MapContainer
             center={position}
             zoom={12}
-            minZoom={11}
+            // minZoom={11}
             maxZoom={16}
-            maxBounds={ludhianaBounds}
+            // maxBounds={ludhianaBounds}
             maxBoundsViscosity={1.0}
             className="w-full h-full rounded-xl"
         >
@@ -80,7 +80,9 @@ export default function Map({ buses = [], stops = [], redLine, blueLine, route, 
                 </Marker>
             ))}
 
-            {buses.map(bus => (
+            {buses
+            .filter(bus => Array.isArray(bus.location) && bus.location.length === 2)
+            .map(bus => (
                 <Marker key={bus.id} position={bus.location} icon={busIcon}>
                     <Popup>
                         <div className="font-bold">{bus.name}</div>
